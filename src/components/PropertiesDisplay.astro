@@ -1,0 +1,37 @@
+---
+import schema from '../assets/schema.json';
+import { Aside } from '@astrojs/starlight/components';
+import PropertyDisplay from "@components/PropertyDisplay.astro";
+import { getModuleProperties, merge } from '../utils.ts';
+import  { baseOverrides, type Definition, type Type } from "../schema.ts";
+import type { HeaderDepth } from "../utils.ts";
+
+interface Props {
+  depth: HeaderDepth;
+  typeName: Type;
+  overrides?: Partial<Definition>;
+  includeCommon: false
+}
+
+const { depth, typeName, overrides, includeCommon } = Astro.props as Props;
+
+let structDef = (schema.$defs[typeName] ?? {properties: []}) as Definition;
+
+// grab properties here as merge messes up the order
+const properties = getModuleProperties(structDef, includeCommon);
+
+structDef = merge(structuredClone(structDef), baseOverrides);
+if(overrides) structDef = merge(structDef, overrides);
+
+// console.log(structDef.properties.)
+
+---
+
+<div>
+
+  {properties.map((propName) => (
+    <PropertyDisplay depth={depth + 1 as HeaderDepth} name={propName} property={structDef.properties[propName]} required={structDef.required?.includes(propName)} />
+  ))}
+
+  {structDef.type === undefined && <Aside type="danger" title="Error">Type information not found. Check the type name is correct.</Aside>}
+</div>

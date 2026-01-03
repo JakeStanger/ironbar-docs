@@ -1,0 +1,11 @@
+@font-face {
+    font-family: JetbrainsNF;
+    src: url("/fonts/JetBrainsMonoNerdFontMono-Regular.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+code:not(h1 code):not(h2 code):not(h3 code):not(h4 code):not(h5 code):not(h6 code), .code span {
+    font-family: JetbrainsNF, monospace;
+}

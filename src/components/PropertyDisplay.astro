@@ -1,0 +1,157 @@
+---
+import AnchorHeading from '@astrojs/starlight/components/AnchorHeading.astro';
+import { Badge } from '@astrojs/starlight/components';
+import Markdown from '@astropub/md/Markdown';
+import ConfigBlock from "@components/ConfigBlock.astro";
+import { resolveReference, type Definition, type Type, type ResolvedReference } from '../schema.ts';
+import { processMarkdown } from "../markdown.ts";
+import { getDisplayType, getDisplayDefault } from "../utils.ts";
+import type { HeaderDepth } from "../utils.ts";
+import type { Property } from "../schema.ts";
+
+interface Props {
+  depth: HeaderDepth;
+  name?: string;
+  namePrefix?: string;
+  index?: number;
+  parentHeader?: string;
+  required: boolean;
+  property: Property | Definition;
+}
+
+const {
+  depth,
+  namePrefix,
+  name,
+  index,
+  parentHeader,
+  required,
+} = Astro.props as Props;
+
+let { property } = Astro.props;
+
+if (property === undefined) throw new Error('`property` is required');
+
+// nullable fields are treated as an enum with the real variant and a null variant
+// we do not care about the null variant, as this is an implementation detail.
+if(property.anyOf?.length == 2 && property.anyOf[1].type === "null") {
+  const childProperty = { ...property.anyOf[0] };
+  childProperty.description = property.description;
+  childProperty.default = property.default;
+  property = childProperty;
+}
+
+function getReference(property: Property): ResolvedReference | undefined {
+  if (property.$ref) return resolveReference(property.$ref);
+  if (property.items?.$ref) return resolveReference(property.items.$ref);
+}
+
+const reference = getReference(property as Property);
+const definition = reference?.definition;
+
+const displayDefault = getDisplayDefault(property.default);
+
+let propertySet = property.properties ?? definition?.properties;
+let properties = Object.keys(propertySet ?? {});
+
+const enumKey = properties.find(propName => {
+  const childProperty = propertySet[propName];
+  const required = property.required?.includes(propName);
+  return required && childProperty.type === "string" && childProperty.const;
+});
+
+const displayType = getDisplayType(reference?.typeName ?? "" as Type, property);
+const displayName = !enumKey ? ([namePrefix, name || displayType].filter(p => p).join('.')) : propertySet[enumKey].const;
+
+const headerId = [parentHeader, name, index].filter(p => p).join('-');
+
+properties = properties.filter(p => p !== enumKey);
+
+// in some cases we'll get properties from the property,
+// then find the only property is the enum key,
+// in which case we need to look up the reference properties.
+if(enumKey && !properties.length) {
+  propertySet = definition?.properties;
+  properties = Object.keys(propertySet ?? {});
+}
+
+const isComplexEnum = !!(property?.anyOf ?? definition?.anyOf ?? definition?.oneOf);
+const isEnumVariant = index != undefined;
+const isObject = !!properties?.length;
+const isArray = (property.type === "array");
+
+const markdown = processMarkdown(property.description ?? definition?.description, depth);
+
+const hasLeftBadges = isEnumVariant;
+const hasRightBadges = required || isComplexEnum;
+
+---
+
+<>
+  <AnchorHeading level={depth} id={headerId}>
+    {hasLeftBadges && (
+      <span style={{paddingRight: '6px'}}>
+        {index != undefined && <Badge text={(index+1).toString()} variant="caution" size="small" />}
+      </span>
+    )}
+
+    <code>{displayName}</code>
+
+    {hasRightBadges && (
+      <span style={{paddingLeft: '6px'}}>
+        {required && <Badge text="Required" variant="danger" />}
+        {isComplexEnum && <Badge text="Enum" />}
+      </span>
+    )}
+  </AnchorHeading>
+
+  <Markdown of={markdown.markdown || "*No description provided*."} />
+
+  {(isArray || !isEnumVariant) && (
+    <p>
+      {(isArray || !isComplexEnum) && !isObject && (
+        <>
+          <b>Type: </b>
+          <code>{displayType}</code>
+          <br />
+        </>
+      )}
+
+      <b>Default: </b>
+      <code>{displayDefault}</code>
+    </p>
+  )}
+
+  {markdown.example && (
+    <>
+      <AnchorHeading level={depth} id=`${displayName}-example`>Example</AnchorHeading>
+      <ConfigBlock corn={markdown.example} />
+    </>
+  )}
+
+  {isComplexEnum && (property.anyOf ?? definition?.anyOf ?? definition?.oneOf)?.map(((prop, i) => (
+    <Astro.self
+      depth={depth+1 as HeaderDepth}
+      index={i}
+      property={prop}
+      parentHeader={headerId}
+      required={false}
+    />
+  )))}
+
+  {isObject && (
+    <details>
+      <summary>Object keys</summary>
+      {properties.map(propName => (
+        <Astro.self
+          depth={depth+1 as HeaderDepth}
+          name={propName}
+          namePrefix={displayName}
+          property={propertySet[propName]}
+          parentHeader={headerId}
+          required={property.required?.includes(propName)}
+        />
+      ))}
+    </details>
+  )}
+</>

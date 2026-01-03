@@ -1,28 +1,89 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
+// import starlightVersions from "starlight-versions";
+import starlightChangelogs, {
+  makeChangelogsSidebarLinks,
+} from "starlight-changelogs";
+// import starlightLinksValidator from "starlight-links-validator";
+import markdownIntegration from "@astropub/md";
+import remarkDirective from "remark-directive";
+import astroStarlightRemarkAsides from "astro-starlight-remark-asides";
+import fs from "node:fs";
+
+import cloudflare from "@astrojs/cloudflare";
+
+const grammar = JSON.parse(
+  fs.readFileSync("./src/assets/corn.tmLanguage.json", "utf8"),
+);
+
+const corn = {
+  name: "corn",
+  scopeName: "source.corn",
+  patterns: [],
+  id: "corn",
+
+  displayName: "Corn",
+  path: "",
+  ...grammar,
+};
 
 // https://astro.build/config
 export default defineConfig({
-	integrations: [
-		starlight({
-			title: 'My Docs',
-			social: {
-				github: 'https://github.com/withastro/starlight',
-			},
-			sidebar: [
-				{
-					label: 'Guides',
-					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
-					],
-				},
-				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
-				},
-			],
-		}),
-	],
+  site: "https://docs.ironb.ar",
+  integrations: [
+    markdownIntegration(),
+    starlight({
+      plugins: [
+        // starlightLinksValidator(),
+        // starlightVersions({ versions: [{ slug: "0.19.0" }] }),
+        starlightChangelogs(),
+      ],
+      routeMiddleware: "./src/routeMiddleware.ts",
+      title: "Ironbar",
+      description:
+        "Documentation site for Ironbar - a GTK4 bar for Wayland compositors",
+      credits: true,
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/jakestanger/ironbar",
+        },
+      ],
+      editLink: {
+        baseUrl: "https://github.com/jakestanger/ironbar/edit/master",
+      },
+      sidebar: [
+        {
+          label: "Version history",
+          items: [
+            ...makeChangelogsSidebarLinks([
+              {
+                type: "recent",
+                base: "changelog",
+                count: 5,
+              },
+            ]),
+          ],
+        },
+      ],
+      tableOfContents: { maxHeadingLevel: 4 },
+      expressiveCode: {
+        shiki: {
+          langs: [corn],
+        },
+      },
+      customCss: ["./src/styles/global.css"],
+    }),
+  ],
+
+  markdown: {
+    remarkPlugins: [remarkDirective, astroStarlightRemarkAsides],
+    shikiConfig: {
+      langs: [corn],
+    },
+  },
+
+  adapter: cloudflare({ imageService: "compile" }),
 });

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "patterns": [
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#inputs"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keys"
+    }
+  ],
+  "repository": {
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.corn",
+          "match": "(=|\\.)"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.corn",
+          "match": "\\b(let|in)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.corn",
+          "match": "\\b(true|false|null)\\b"
+        },
+        {
+          "name": "constant.numeric.float.corn",
+          "match": "-?[0-9]+\\.[0-9]+(e[+\\-][0-9]+)?"
+        },
+        {
+          "name": "constant.numeric.hexInteger.corn",
+          "match": "0x[0-9a-fA-F]+"
+        },
+        {
+          "name": "constant.numeric.integer.corn",
+          "match": "-?[0-9]+(_?[0-9]+)*"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.corn",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.unicode.corn",
+          "match": "\\\\u[0-9a-fA-F]{4}"
+        },
+        {
+          "name": "constant.character.escape.corn",
+          "match": "\\\\."
+        },
+        {
+          "name": "variable.name.corn",
+          "match": "\\$[A-z_][A-z0-9_]*"
+        }
+      ]
+    },
+    "inputs": {
+      "patterns": [
+        {
+          "name": "variable.name.corn",
+          "match": "\\$[A-z_][A-z0-9_]*"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.corn",
+          "begin": "//",
+          "end": "$"
+        }
+      ]
+    },
+    "keys": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.corn",
+          "match": "\\b[A-z0-9_]+\\b"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.corn"
+}

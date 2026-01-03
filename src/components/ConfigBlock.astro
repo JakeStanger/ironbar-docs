@@ -1,0 +1,41 @@
+---
+import { parse } from '@cornjs/parser';
+import YAML from 'yaml';
+import TOML, { type JsonMap } from '@tuzig/toml';
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+
+interface Data {
+  json: string,
+  yaml: string,
+  toml: string
+}
+
+const { corn } = Astro.props as { corn: string };
+
+let data: Data;
+try {
+  const result = parse(corn);
+  const parsed = result.ok ? result.value : { ERROR: result.error };
+
+  data = {
+    json: JSON.stringify(parsed, null, 2),
+    yaml: YAML.stringify(parsed, null, 2),
+    toml: TOML.stringify(parsed as JsonMap),
+  }
+} catch {
+  data = {} as Data;
+}
+
+---
+
+<Tabs syncKey='lang'>
+    {corn && <TabItem label="Corn"><Code code={corn} lang='corn'  /></TabItem>}
+    {data.json && <TabItem label="JSON"><Code code={data.json} lang='json' /></TabItem>}
+    {data.yaml && <TabItem label="YAML"><Code code={data.yaml} lang='yaml' /></TabItem>}
+    {data.toml && <TabItem label="TOML"><Code code={data.toml} lang='toml' /></TabItem>}
+</Tabs>
+
+{corn === undefined && <Aside type="danger" title="Error">Empty corn input</Aside>}
+{corn && !data.json && <Aside type="danger" title="Error">Invalid corn input</Aside>}
