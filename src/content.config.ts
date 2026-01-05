@@ -127,6 +127,10 @@ function ironbarDocsLoader(): Loader {
   const VERSION = "docs/starlight";
   const ENDPOINT = "https://api.github.com/graphql";
 
+  if(!import.meta.env.GITHUB_TOKEN) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
   const query = readFileSync("src/assets/query.graphql", "utf-8");
 
   // recursive prevents failure if exists (`mkdir -p`)
@@ -159,8 +163,20 @@ function ironbarDocsLoader(): Loader {
   };
 }
 
+async function schemaLoader() {
+  const VERSION = "master";
+
+  const file = VERSION === "master" ? "schema.json" : `schema-${VERSION}.json`;
+  const url = `https://f.jstanger.dev/github/ironbar/${file}`;
+
+  const schema = await fetch(url).then(r => r.json());
+
+  return { schema }
+}
+
 export const collections = {
   docs: defineCollection({ loader: ironbarDocsLoader(), schema: docsSchema() }),
+  schema: defineCollection({ loader: schemaLoader, }),
   // versions: defineCollection({ loader: docsVersionsLoader() }),
   changelogs: defineCollection({
     loader: changelogsLoader([

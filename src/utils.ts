@@ -1,23 +1,20 @@
-import schema from "./assets/schema.json";
-import {
-  commonModuleProperties,
-  type JsonValue,
-  resolveReference,
-} from "./schema.ts";
-import type { Definition, Property, Type } from "./schema.ts";
+import type { Schema, Definition, Property, Type } from "./schema.ts";
+import { commonModuleProperties, type JsonValue, resolveReference } from "./schema.ts";
 
 export type HeaderDepth = 1 | 2 | 3 | 4 | 5 | 6;
 export const MAX_HEADER_DEPTH = 6;
 
 export function getDisplayType(
+  schema: Schema,
   typeName: Type,
   property: Property | Definition,
 ): string {
-  const type = getDisplayTypePart(typeName, property);
+  const type = getDisplayTypePart(schema, typeName, property);
   return Array.from(new Set(type.split(" | "))).join(" | ");
 }
 
 function getDisplayTypePart(
+  schema: Schema,
   typeName: Type,
   property: Property | Definition,
 ): string {
@@ -35,6 +32,7 @@ function getDisplayTypePart(
 
   if (type === "array") {
     const childType = getDisplayTypePart(
+      schema,
       typeName,
       (property as Property).items!,
     );
@@ -42,13 +40,13 @@ function getDisplayTypePart(
   }
 
   if ((property as Property).$ref) {
-    const ref = resolveReference((property as Property).$ref!);
-    return getDisplayTypePart(ref.typeName, ref.definition);
+    const ref = resolveReference(schema, (property as Property).$ref!);
+    return getDisplayTypePart(schema, ref.typeName, ref.definition);
   }
 
   if (property.anyOf) {
     const values = property.anyOf.map((prop) =>
-      getDisplayTypePart(typeName, prop),
+      getDisplayTypePart(schema, typeName, prop),
     );
     return Array.from(new Set(values)).join(" | ");
   }
@@ -85,13 +83,14 @@ export function getDisplayDefault(value: JsonValue | undefined) {
 }
 
 export function getModuleProperties(
+  schema: Schema,
   definition: Definition,
   includeCommon = false,
 ): string[] {
-  const properties = Object.keys(definition.properties).filter((prop) => {
+  return Object.keys(definition.properties).filter((prop) => {
     if (includeCommon) return true;
 
-    const matchesCommon = commonModuleProperties.includes(prop);
+    const matchesCommon = commonModuleProperties(schema).includes(prop);
 
     // some modules have properties which override the common properties -
     // we assume if their descriptions don't match, they're different.
@@ -106,17 +105,21 @@ export function getModuleProperties(
 
     return true;
   });
-
-  return properties;
 }
 
-export function merge(obj1: Record<string, unknown>, obj2: Record<string, unknown>): Record<string, unknown> {
+export function merge(
+  obj1: Record<string, unknown>,
+  obj2: Record<string, unknown>,
+): Record<string, unknown> {
   for (let k in obj2) {
     const key = k as keyof Definition;
 
     if (obj2.hasOwnProperty(key)) {
       if (obj2[key] instanceof Object && obj1[key] instanceof Object) {
-        obj1[key] = merge(obj1[key] as Record<string, unknown>, obj2[key] as Record<string, unknown>);
+        obj1[key] = merge(
+          obj1[key] as Record<string, unknown>,
+          obj2[key] as Record<string, unknown>,
+        );
       } else {
         obj1[key] = obj2[key];
       }

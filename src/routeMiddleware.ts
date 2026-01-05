@@ -1,9 +1,8 @@
 import { defineRouteMiddleware } from "@astrojs/starlight/route-data";
-import schema from "./assets/schema.json";
 import { aliases, type Definition, type Type } from "./schema.ts";
 import type { APIContext } from "astro";
 import { capitalise, getModuleProperties } from "./utils.ts";
-import { getCollection } from "astro:content";
+import { getCollection, getEntry } from "astro:content";
 
 import type {
   SidebarEntry,
@@ -15,7 +14,7 @@ import type {
 type Tree = { [key: string | symbol]: Tree };
 const titleKey = Symbol("title");
 
-function addTocItems(context: APIContext, pageId: string) {
+async function addTocItems(context: APIContext, pageId: string) {
   const items = context.locals.starlightRoute.toc?.items;
   if (!items) return;
 
@@ -26,11 +25,13 @@ function addTocItems(context: APIContext, pageId: string) {
     typeName = aliases[typeName as keyof typeof aliases] as Type;
   }
 
+  const schema = await getEntry("schema", "schema")?.then((res) => res.data);
+
   const structDef = (schema.$defs[typeName] ?? {
     properties: [],
   }) as Definition;
 
-  const properties = getModuleProperties(structDef);
+  const properties = getModuleProperties(schema, structDef);
 
   const configuration = items.find((i) => i.slug === "configuration");
   if (!configuration) return;
@@ -48,7 +49,7 @@ function addTocItems(context: APIContext, pageId: string) {
 export const onRequest = defineRouteMiddleware(async (context) => {
   const pageId = context.locals.starlightRoute.id;
   if (pageId.startsWith("modules/")) {
-    addTocItems(context, pageId);
+    await addTocItems(context, pageId);
   }
 
   await addSidebar(context);
@@ -70,7 +71,9 @@ async function addSidebar(context: APIContext) {
       id
         .split("/")
         .reduce(
-          (obj, key, i, arr) => (obj[key] = obj[key] || (i === arr.length - 1 ? { [titleKey]: title } : {})),
+          (obj, key, i, arr) =>
+            (obj[key] =
+              obj[key] || (i === arr.length - 1 ? { [titleKey]: title } : {})),
           tree,
         ),
     );
@@ -87,7 +90,7 @@ async function addSidebar(context: APIContext) {
     addSidebarItem(node, tree[node], sidebar, currentPath);
   }
 
-  if(versionHistory) sidebar.push(versionHistory);
+  if (versionHistory) sidebar.push(versionHistory);
 }
 
 function addSidebarItem(

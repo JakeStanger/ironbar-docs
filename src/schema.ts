@@ -1,6 +1,7 @@
-import schema from "./assets/schema.json";
+export type Schema = Definition & {
+  $defs: Record<string, Definition>;
+};
 
-export type Schema = typeof schema;
 export type JsonValue =
   | string
   | number
@@ -48,15 +49,18 @@ export const baseOverrides: Partial<Definition> = {
     locale: { default: "$LC_TIME | $LANG | 'POSIX'" },
     justify: { default: "'left'" },
     orientation: { default: "'horizontal'" },
-    music_dir: { default: "$HOME/Music" }
+    music_dir: { default: "$HOME/Music" },
   },
 };
 
-export const commonModuleProperties = Object.keys(
-  schema.$defs["CommonConfig"].properties,
-);
+export function commonModuleProperties(schema: Schema) {
+  return Object.keys(schema.$defs["CommonConfig"].properties);
+}
 
-export function resolveReference(ref: string): ResolvedReference {
+export function resolveReference(
+  schema: Schema,
+  ref: string,
+): ResolvedReference {
   const typeName = ref.split("/")[2] as Type;
   const definition = schema.$defs[typeName] as Definition;
 

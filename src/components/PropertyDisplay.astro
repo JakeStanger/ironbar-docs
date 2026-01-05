@@ -3,7 +3,7 @@ import AnchorHeading from '@astrojs/starlight/components/AnchorHeading.astro';
 import { Badge } from '@astrojs/starlight/components';
 import Markdown from '@astropub/md/Markdown';
 import ConfigBlock from "@components/ConfigBlock.astro";
-import { resolveReference, type Definition, type Type, type ResolvedReference } from '../schema.ts';
+import { resolveReference, type Definition, type Type, type ResolvedReference, type Schema } from '../schema.ts';
 import { processMarkdown } from "../markdown.ts";
 import { getDisplayType, getDisplayDefault } from "../utils.ts";
 import type { HeaderDepth } from "../utils.ts";
@@ -17,6 +17,7 @@ interface Props {
   parentHeader?: string;
   required: boolean;
   property: Property | Definition;
+  schema: Schema;
 }
 
 const {
@@ -28,7 +29,7 @@ const {
   required,
 } = Astro.props as Props;
 
-let { property } = Astro.props;
+let { property, schema } = Astro.props;
 
 if (property === undefined) throw new Error('`property` is required');
 
@@ -42,8 +43,8 @@ if(property.anyOf?.length == 2 && property.anyOf[1].type === "null") {
 }
 
 function getReference(property: Property): ResolvedReference | undefined {
-  if (property.$ref) return resolveReference(property.$ref);
-  if (property.items?.$ref) return resolveReference(property.items.$ref);
+  if (property.$ref) return resolveReference(schema, property.$ref);
+  if (property.items?.$ref) return resolveReference(schema, property.items.$ref);
 }
 
 const reference = getReference(property as Property);
@@ -60,7 +61,7 @@ const enumKey = properties.find(propName => {
   return required && childProperty.type === "string" && childProperty.const;
 });
 
-const displayType = getDisplayType(reference?.typeName ?? "" as Type, property);
+const displayType = getDisplayType(schema, reference?.typeName ?? "" as Type, property);
 const displayName = !enumKey ? ([namePrefix, name || displayType].filter(p => p).join('.')) : propertySet[enumKey].const;
 
 const headerId = [parentHeader, name, index].filter(p => p).join('-');
@@ -134,6 +135,7 @@ const hasRightBadges = required || isComplexEnum;
       depth={depth+1 as HeaderDepth}
       index={i}
       property={prop}
+      schema={schema}
       parentHeader={headerId}
       required={false}
     />
@@ -148,6 +150,7 @@ const hasRightBadges = required || isComplexEnum;
           name={propName}
           namePrefix={displayName}
           property={propertySet[propName]}
+          schema={schema}
           parentHeader={headerId}
           required={property.required?.includes(propName)}
         />
