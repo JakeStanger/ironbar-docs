@@ -30,7 +30,7 @@ const corn = {
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://docs.ironb.ar",
+  site: "https://ironb.ar",
   integrations: [
     markdownIntegration(),
     starlight({
