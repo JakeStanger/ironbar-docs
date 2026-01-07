@@ -84,7 +84,7 @@ async function addSidebar(context: APIContext, version: string) {
   const versionHistory = sidebar.pop();
 
   for (const node of Object.keys(tree)) {
-    addSidebarItem(node, tree[node], sidebar, currentPath);
+    addSidebarItem(node, tree[node], sidebar, version, currentPath);
   }
 
   if (versionHistory) sidebar.push(versionHistory);
@@ -94,6 +94,7 @@ function addSidebarItem(
   name: string,
   tree: Tree,
   sidebar: SidebarEntry[],
+  version: string,
   currentPath: string,
   path: string[] = [],
 ) {
@@ -103,7 +104,8 @@ function addSidebarItem(
   if (isLeafNode) {
     const href =
       "/" +
-      [...path, name]
+      [version !== "master" && version, ...path, name]
+        .filter(p => p)
         .join("/")
         .toLowerCase()
         .replace(/index$/, "");
@@ -125,7 +127,7 @@ function addSidebarItem(
     };
 
     for (const node of Object.keys(tree)) {
-      addSidebarItem(node, tree[node], entry.entries, currentPath, [
+      addSidebarItem(node, tree[node], entry.entries, version, currentPath, [
         ...path,
         name,
       ]);
