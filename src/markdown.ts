@@ -183,7 +183,7 @@ function hydrateExamples(markdown: string): string {
       continue;
     }
 
-    if (matching && line === "```") {
+    if (matching && line.trimStart() === "```") {
       result.push(configBlock(cornLines.join("\n")));
       cornLines = [];
       matching = false;
