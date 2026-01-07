@@ -81,14 +81,22 @@ const isEnumVariant = index != undefined;
 const isObject = !!properties?.length;
 const isArray = (property.type === "array");
 
+// `ModuleConfig` is the top-level enum for all modules.
+// This will attempt to expand every module's documentation into the page,
+// causing infinite recursion due to the `CustomModule`.
+const isModuleConfig = reference?.typeName === "ModuleConfig";
+
 const markdown = processMarkdown(property.description ?? definition?.description, depth);
 
 const hasLeftBadges = isEnumVariant;
 const hasRightBadges = required || isComplexEnum;
 
+// avoid infinite recursion - nothing should be this deep
+const MAX_DEPTH = 6;
+
 ---
 
-<>
+{depth < MAX_DEPTH && <>
   <AnchorHeading level={depth} id={headerId}>
     {hasLeftBadges && (
       <span style={{paddingRight: '6px'}}>
@@ -130,7 +138,7 @@ const hasRightBadges = required || isComplexEnum;
     </>
   )}
 
-  {isComplexEnum && (property.anyOf ?? definition?.anyOf ?? definition?.oneOf)?.map(((prop, i) => (
+  {isComplexEnum && !isModuleConfig && (property.anyOf ?? definition?.anyOf ?? definition?.oneOf)?.map(((prop, i) => (
     <Astro.self
       depth={depth+1 as HeaderDepth}
       index={i}
@@ -157,4 +165,4 @@ const hasRightBadges = required || isComplexEnum;
       ))}
     </details>
   )}
-</>
+</>}
