@@ -206,13 +206,16 @@ function ironbarDocsLoader(): Loader {
       const versions = await getVersions(context);
 
       for (const version of versions) {
+        // TODO: remove once merged
+        let reqVersion = version === "master" ? "docs/starlight" : version;
+
         const data = await getGraphqlData<
           FilesRequest,
           { repository: { object: GitHubDirectory } }
         >(context, "files", {
           owner: "JakeStanger",
           name: "ironbar",
-          object: `${version}:docs`,
+          object: `${reqVersion}:docs`,
         });
 
         await getFilesRecursive(data.repository.object, version, context);
