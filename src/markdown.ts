@@ -220,5 +220,8 @@ export function processMarkdown2(
     hydrateExamples,
   ];
 
-  return [header(title), handlers.map((func) => func(markdown))].join("\n");
+  return [
+    header(title),
+    handlers.reduce((md, func) => func(md), markdown),
+  ].join("\n");
 }
