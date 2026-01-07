@@ -1,6 +1,15 @@
-export type Schema = Definition & {
+export type Schema = Definition &
+  (
+    NewSchema | OldSchema
+  );
+
+export interface NewSchema {
   $defs: Record<string, Definition>;
-};
+}
+
+export interface OldSchema {
+  definitions: Record<string, Definition>;
+}
 
 export type JsonValue =
   | string
@@ -10,8 +19,7 @@ export type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
-export type Definitions = Schema["$defs"];
-export type Type = keyof Definitions;
+export type Type = string;
 
 export interface Definition {
   description: string;
@@ -54,7 +62,12 @@ export const baseOverrides: Partial<Definition> = {
 };
 
 export function commonModuleProperties(schema: Schema) {
-  return Object.keys(schema.$defs["CommonConfig"].properties);
+  return Object.keys(definitions(schema)["CommonConfig"].properties);
+}
+
+export function definitions(schema: Schema): Record<string, Definition> {
+  if (isNewSchema(schema)) return schema.$defs;
+  else return schema.definitions;
 }
 
 export function resolveReference(
@@ -62,10 +75,14 @@ export function resolveReference(
   ref: string,
 ): ResolvedReference {
   const typeName = ref.split("/")[2] as Type;
-  const definition = schema.$defs[typeName] as Definition;
+  const definition = definitions(schema)[typeName] as Definition;
 
   return {
     typeName,
     definition,
   };
+}
+
+function isNewSchema(schema: Schema): schema is Definition & NewSchema {
+  return !!(schema as NewSchema).$defs;
 }

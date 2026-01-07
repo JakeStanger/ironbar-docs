@@ -1,5 +1,5 @@
 import { defineRouteMiddleware } from "@astrojs/starlight/route-data";
-import { aliases, type Definition, type Schema, type Type } from "./schema.ts";
+import { aliases, type Definition, definitions, type Schema, type Type } from "./schema.ts";
 import type { APIContext } from "astro";
 import { capitalise, getModuleProperties } from "./utils.ts";
 import { getCollection, getEntry } from "astro:content";
@@ -31,7 +31,7 @@ async function addTocItems(context: APIContext, version: string, pageId: string)
     version,
   )?.then((res) => res.data.schema);
 
-  const structDef = (schema.$defs[typeName] ?? {
+  const structDef = (definitions(schema)[typeName] ?? {
     properties: [],
   }) as Definition;
 

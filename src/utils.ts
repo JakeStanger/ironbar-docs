@@ -1,5 +1,15 @@
-import type { Schema, Definition, Property, Type } from "./schema.ts";
-import { commonModuleProperties, type JsonValue, resolveReference } from "./schema.ts";
+import {
+  type Schema,
+  type Definition,
+  type Property,
+  type Type,
+  definitions,
+} from "./schema.ts";
+import {
+  commonModuleProperties,
+  type JsonValue,
+  resolveReference,
+} from "./schema.ts";
 
 export type HeaderDepth = 1 | 2 | 3 | 4 | 5 | 6;
 export const MAX_HEADER_DEPTH = 6;
@@ -96,9 +106,7 @@ export function getModuleProperties(
     // we assume if their descriptions don't match, they're different.
     if (matchesCommon) {
       const property = definition.properties[prop];
-      const commonProp = schema.$defs.CommonConfig.properties[
-        prop as keyof typeof schema.$defs.CommonConfig.properties
-      ] as Property;
+      const commonProp = definitions(schema).CommonConfig.properties[prop] as Property;
 
       return property.description != commonProp.description;
     }

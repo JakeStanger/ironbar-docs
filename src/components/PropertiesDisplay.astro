@@ -2,7 +2,7 @@
 import { Aside } from '@astrojs/starlight/components';
 import PropertyDisplay from "@components/PropertyDisplay.astro";
 import { getModuleProperties, merge } from '../utils.ts';
-import  { baseOverrides, type Definition, type Schema, type Type } from "../schema.ts";
+import  { baseOverrides, type Definition, definitions, type Schema, type Type } from "../schema.ts";
 import { getEntry } from "astro:content";
 import type { HeaderDepth } from "../utils.ts";
 
@@ -18,7 +18,7 @@ const { version } = Astro.locals as { version: string };
 
 const schema: Schema = await getEntry('schema', version)?.then(res => res.data.schema);
 
-let structDef = (schema.$defs[typeName] ?? {properties: []}) as Definition;
+let structDef = (definitions(schema)[typeName] ?? {properties: []}) as Definition;
 
 // grab properties here as merge messes up the order
 const properties = getModuleProperties(schema, structDef, includeCommon);
