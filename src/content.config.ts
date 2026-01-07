@@ -113,6 +113,11 @@ async function getFilesRecursive(
       const parsedData = await context.parseData({ id, filePath, data });
       parsedData.version = version;
 
+      if (version !== "master") {
+        parsedData.pagefind = false;
+        parsedData.editUrl = false;
+      }
+
       const dataEntry: DataEntry = {
         id,
         filePath,
