@@ -189,6 +189,9 @@ async function getVersions(context: LoaderContext): Promise<string[]> {
     top: 5,
   }).then((r) => r.repository.refs.nodes.map((n) => n.name));
 
+  // latest first
+  versions.reverse();
+
   return ["master", ...versions];
 }
 

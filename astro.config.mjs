@@ -55,6 +55,7 @@ export default defineConfig({
         baseUrl: "https://github.com/jakestanger/ironbar/edit/master",
       },
       components: {
+        Banner: "./src/overrides/Banner.astro",
         ThemeSelect: "./src/overrides/ThemeSelect.astro",
       },
       sidebar: [

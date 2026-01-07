@@ -1,0 +1,43 @@
+---
+import { getCollection } from "astro:content";
+const { version } = Astro.locals;
+
+const versions = await getCollection('schema')
+  .then(data => data.map(v => v.id));
+
+const stableVersion = versions[1];
+
+const isGitVersion = version === "master";
+const isPrevVersion = !isGitVersion && version !== stableVersion;
+
+const returnUrl = `/${stableVersion}/` + Astro.url.pathname
+  .split('/')
+  .filter(p => p)
+  .slice(isGitVersion ? 0 : 1)
+  .join('/');
+
+---
+
+<style>
+  .banner {
+    background-color: var(--sl-color-accent-low);
+    box-shadow: var(--sl-shadow-sm);
+    color: var(--sl-color-text);
+    line-height: var(--sl-line-height-headings);
+    padding: var(--sl-nav-pad-y) var(--sl-nav-pad-x);
+    text-align: center;
+    text-wrap: balance;
+  }
+</style>
+
+{isGitVersion && (
+  <div class="banner">
+    You are viewing documentation for the latest commit. Click <a href={returnUrl}>here</a> to view the latest stable version.
+  </div>
+  )}
+
+{isPrevVersion && (
+  <div class="banner">
+    You are viewing documentation for an older version. Click <a href={returnUrl}>here</a> to view the latest stable version.
+  </div>
+)}
