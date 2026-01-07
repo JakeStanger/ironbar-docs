@@ -200,7 +200,11 @@ function hydrateProperties(
   depth = 2,
 ): (markdown: string) => string {
   return (markdown: string) =>
-    markdown.replace("%{properties}%", propertiesDisplay(typeName, depth));
+    markdown
+      .replaceAll("%{properties}%", propertiesDisplay(typeName, depth))
+      .replaceAll(/%{properties:(\w+)}%/g, (_, typeName) =>
+        propertiesDisplay(typeName, depth),
+      );
 }
 
 export function processMarkdown2(
