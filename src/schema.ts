@@ -62,7 +62,7 @@ export const baseOverrides: Partial<Definition> = {
 };
 
 export function commonModuleProperties(schema: Schema) {
-  return Object.keys(definitions(schema)["CommonConfig"].properties);
+  return Object.keys(definitions(schema)["CommonConfig"]?.properties ?? {});
 }
 
 export function definitions(schema: Schema): Record<string, Definition> {
