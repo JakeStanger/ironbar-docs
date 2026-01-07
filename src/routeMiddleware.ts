@@ -61,10 +61,12 @@ async function addSidebar(context: APIContext, version: string) {
 
   const tree: Tree = {};
   docs
+    .filter(doc => doc.data.title !== "Home")
     .map((doc) => ({ id: doc.id, title: doc.data.title }))
     .forEach(({ id, title }) =>
       id
         .split("/")
+        .filter(p => p !== version)
         .reduce(
           (obj, key, i, arr) =>
             (obj[key] =
