@@ -132,7 +132,3 @@ export function merge(
 export function capitalise(string: string): string {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
-
-export function removeCharAtIndex(string: string, index: number): string {
-  return string.slice(0, index) + string.slice(index + 1);
-}

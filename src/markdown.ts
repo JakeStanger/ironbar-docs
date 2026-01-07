@@ -1,7 +1,6 @@
 import {
   type HeaderDepth,
   MAX_HEADER_DEPTH,
-  removeCharAtIndex,
 } from "./utils.ts";
 
 type ParserMode = "markdown" | "example" | "styling";
@@ -157,18 +156,18 @@ function fixupAlerts(markdown: string): string {
 function hydrateHeaders(markdown: string): string {
   return markdown;
 
-  const lines = markdown.split("\n");
-
-  const result: string[] = [];
-  for (const line of lines) {
-    if (line.startsWith("#")) {
-      const depth = line.indexOf(" ");
-      const text = line.substring(depth + 1);
-      result.push(heading(depth, text));
-    } else result.push(line);
-  }
-
-  return result.join("\n");
+  // const lines = markdown.split("\n");
+  //
+  // const result: string[] = [];
+  // for (const line of lines) {
+  //   if (line.startsWith("#")) {
+  //     const depth = line.indexOf(" ");
+  //     const text = line.substring(depth + 1);
+  //     result.push(heading(depth, text));
+  //   } else result.push(line);
+  // }
+  //
+  // return result.join("\n");
 }
 
 function hydrateExamples(markdown: string): string {
