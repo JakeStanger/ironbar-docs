@@ -46,22 +46,6 @@ async function addTocItems(context: APIContext, pageId: string) {
   );
 }
 
-export const onRequest = defineRouteMiddleware(async (context) => {
-  const route = context.locals.starlightRoute;
-  const pageId = route.id;
-  if (pageId.startsWith("modules/")) {
-    await addTocItems(context, pageId);
-  }
-
-  await addSidebar(context);
-
-  if (route.editUrl) {
-    route.editUrl.pathname = route.editUrl.pathname
-      .replace(".astro/collections/", "")
-      .slice(0, -1);
-  }
-});
-
 async function addSidebar(context: APIContext) {
   let docs;
   try {
@@ -111,11 +95,15 @@ function addSidebarItem(
   const isLeafNode = Object.keys(tree).length === 0;
 
   if (isLeafNode) {
-    const href = "/" + [...path, name].join("/").toLowerCase();
+    const href =
+      "/" +
+      [...path, name]
+        .join("/")
+        .toLowerCase()
+        .replace(/index$/, "");
 
     const entry: SidebarLink = {
       type: "link",
-      // label: name,
       label: tree[titleKey],
       href,
       attrs: {},
@@ -127,7 +115,6 @@ function addSidebarItem(
     const entry: SidebarGroup = {
       type: "group",
       label: capitalise(name.replace("-", " ")),
-      // label: tree[titleKey],
       entries: [],
     };
 
@@ -141,3 +128,19 @@ function addSidebarItem(
     sidebar.push(entry);
   }
 }
+
+export const onRequest = defineRouteMiddleware(async (context) => {
+  const route = context.locals.starlightRoute;
+  const pageId = route.id;
+  if (pageId.startsWith("modules/")) {
+    await addTocItems(context, pageId);
+  }
+
+  await addSidebar(context);
+
+  if (route.editUrl) {
+    route.editUrl.pathname = route.editUrl.pathname
+      .replace(".astro/collections/", "")
+      .slice(0, -1);
+  }
+});

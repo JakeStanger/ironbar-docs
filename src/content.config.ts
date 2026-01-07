@@ -9,7 +9,7 @@ import { aliases, type Type } from "./schema.ts";
 import type { DataEntry } from "astro/content/config";
 import type { ContentEntryType } from "astro";
 import { pathToFileURL } from "node:url";
-import path from 'node:path';
+import path from "node:path";
 
 interface GraphQlResponse {
   errors?: GraphQlError[];
@@ -53,10 +53,11 @@ async function getFilesRecursive(
       if (ignoredFiles.includes(obj.path)) continue;
 
       const id = obj.path
+        .toLowerCase()
         .replace("docs/", "")
+        .replace("home", "index")
         .replace(".md", "")
-        .replaceAll(" ", "-")
-        .toLowerCase();
+        .replaceAll(" ", "-");
 
       const title = obj.name.replace(".md", "");
 
@@ -66,7 +67,7 @@ async function getFilesRecursive(
 
       const mdString = processMarkdown2(obj.object.text, title, typeName);
 
-      const filePath = path.join('.astro', 'collections', obj.path + "x");
+      const filePath = path.join(".astro", "collections", obj.path + "x");
 
       const digest = context.generateDigest({
         id,
@@ -129,7 +130,7 @@ function ironbarDocsLoader(): Loader {
   const VERSION = "docs/starlight";
   const ENDPOINT = "https://api.github.com/graphql";
 
-  if(!import.meta.env.GITHUB_TOKEN) {
+  if (!import.meta.env.GITHUB_TOKEN) {
     throw new Error("Missing GITHUB_TOKEN");
   }
 
@@ -168,14 +169,14 @@ async function schemaLoader() {
   const file = VERSION === "master" ? "schema.json" : `schema-${VERSION}.json`;
   const url = `https://f.jstanger.dev/github/ironbar/${file}`;
 
-  const schema = await fetch(url).then(r => r.json());
+  const schema = await fetch(url).then((r) => r.json());
 
-  return { schema }
+  return { schema };
 }
 
 export const collections = {
   docs: defineCollection({ loader: ironbarDocsLoader(), schema: docsSchema() }),
-  schema: defineCollection({ loader: schemaLoader, }),
+  schema: defineCollection({ loader: schemaLoader }),
   // versions: defineCollection({ loader: docsVersionsLoader() }),
   changelogs: defineCollection({
     loader: changelogsLoader([
