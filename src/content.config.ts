@@ -9,6 +9,7 @@ import { aliases, type Type } from "./schema.ts";
 import type { DataEntry } from "astro/content/config";
 import type { ContentEntryType } from "astro";
 import { pathToFileURL } from "node:url";
+import path from 'node:path';
 
 interface GraphQlResponse {
   errors?: GraphQlError[];
@@ -65,7 +66,7 @@ async function getFilesRecursive(
 
       const mdString = processMarkdown2(obj.object.text, title, typeName);
 
-      const filePath = `cache/${obj.path.replaceAll("/", "_")}x`;
+      const filePath = path.join('.astro', 'collections', obj.path + "x");
 
       const digest = context.generateDigest({
         id,
@@ -75,6 +76,7 @@ async function getFilesRecursive(
 
       // cache file in project `cache` folder
       // as mdx requires deferred rendering
+      mkdirSync(path.dirname(filePath), { recursive: true });
       writeFileSync(filePath, mdString);
 
       // `entryTypes` is marked internal
@@ -132,9 +134,6 @@ function ironbarDocsLoader(): Loader {
   }
 
   const query = readFileSync("src/assets/query.graphql", "utf-8");
-
-  // recursive prevents failure if exists (`mkdir -p`)
-  mkdirSync("cache", { recursive: true });
 
   return {
     name: "ironbar-docs-loader",
