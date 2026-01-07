@@ -1,7 +1,4 @@
-import {
-  type HeaderDepth,
-  MAX_HEADER_DEPTH,
-} from "./utils.ts";
+import { type HeaderDepth, MAX_HEADER_DEPTH } from "./utils.ts";
 
 type ParserMode = "markdown" | "example" | "styling";
 
@@ -156,6 +153,7 @@ function fixupAlerts(markdown: string): string {
 function hydrateHeaders(markdown: string): string {
   return markdown;
 
+  // TODO: finish - gotta account for code blocks
   // const lines = markdown.split("\n");
   //
   // const result: string[] = [];
@@ -198,11 +196,11 @@ function hydrateExamples(markdown: string): string {
 }
 
 function hydrateProperties(
-  markdown: string,
   typeName: string,
   depth = 2,
-): string {
-  return markdown.replace("%{properties}%", propertiesDisplay(typeName, depth));
+): (markdown: string) => string {
+  return (markdown: string) =>
+    markdown.replace("%{properties}%", propertiesDisplay(typeName, depth));
 }
 
 export function processMarkdown2(
@@ -210,13 +208,13 @@ export function processMarkdown2(
   title: string,
   typeName: string,
 ): string {
-  return [
-    header(title),
-    hydrateExamples(
-      hydrateProperties(
-        hydrateHeaders(fixupAlerts(fixupLinks(markdown))),
-        typeName,
-      ),
-    ),
-  ].join("\n");
+  const handlers = [
+    fixupLinks,
+    fixupAlerts,
+    hydrateHeaders,
+    hydrateProperties(typeName),
+    hydrateExamples,
+  ];
+
+  return [header(title), handlers.map((func) => func(markdown))].join("\n");
 }
