@@ -1,7 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
-// import starlightVersions from "starlight-versions";
 import starlightChangelogs, {
   makeChangelogsSidebarLinks,
 } from "starlight-changelogs";

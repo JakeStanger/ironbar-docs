@@ -1,6 +1,5 @@
 import { defineCollection } from "astro:content";
 import { docsSchema } from "@astrojs/starlight/schema";
-// import { docsVersionsLoader } from "starlight-versions/loader";
 import { changelogsLoader } from "starlight-changelogs/loader";
 import type { Loader, LoaderContext } from "astro/loaders";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
