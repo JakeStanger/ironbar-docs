@@ -147,7 +147,7 @@ export const onRequest = defineRouteMiddleware(async (context) => {
   const isPrevVersion = /^v\d/.test(maybeVersion);
   const version = isPrevVersion ? maybeVersion : "master";
 
-  if (pageId.startsWith("modules/")) {
+  if (parts[0] === "modules" || parts[1] === "modules") {
     await addTocItems(context, version, pageId);
   }
 
