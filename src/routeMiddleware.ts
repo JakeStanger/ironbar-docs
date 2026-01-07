@@ -47,12 +47,19 @@ async function addTocItems(context: APIContext, pageId: string) {
 }
 
 export const onRequest = defineRouteMiddleware(async (context) => {
-  const pageId = context.locals.starlightRoute.id;
+  const route = context.locals.starlightRoute;
+  const pageId = route.id;
   if (pageId.startsWith("modules/")) {
     await addTocItems(context, pageId);
   }
 
   await addSidebar(context);
+
+  if (route.editUrl) {
+    route.editUrl.pathname = route.editUrl.pathname
+      .replace(".astro/collections/", "")
+      .slice(0, -1);
+  }
 });
 
 async function addSidebar(context: APIContext) {
