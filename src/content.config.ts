@@ -5,15 +5,27 @@ import { changelogsLoader } from "starlight-changelogs/loader";
 import type { Loader, LoaderContext } from "astro/loaders";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { processMarkdown2 } from "./markdown.ts";
-import { aliases, type Type } from "./schema.ts";
+import { aliases, type Schema, type Type } from "./schema.ts";
 import type { DataEntry } from "astro/content/config";
 import type { ContentEntryType } from "astro";
 import { pathToFileURL } from "node:url";
 import path from "node:path";
 
-interface GraphQlResponse {
+interface FilesRequest {
+  owner: string;
+  name: string;
+  object: string;
+}
+
+interface TagsRequest {
+  owner: string;
+  name: string;
+  top: number;
+}
+
+interface GraphQlResponse<T> {
   errors?: GraphQlError[];
-  data: { repository: { object: GitHubDirectory } };
+  data: T;
 }
 
 interface GraphQlError {
@@ -37,6 +49,12 @@ interface GitHubFile {
   text: string;
 }
 
+interface GithubRefs {
+  nodes: {
+    name: string;
+  }[];
+}
+
 const ignoredFiles = ["docs/_Sidebar.md"];
 
 function isFile(obj: GitHubFile | GitHubDirectory): obj is GitHubFile {
@@ -45,12 +63,15 @@ function isFile(obj: GitHubFile | GitHubDirectory): obj is GitHubFile {
 
 async function getFilesRecursive(
   directory: GitHubDirectory,
+  version: string,
   context: LoaderContext,
 ) {
   for (const obj of directory.entries) {
     if (isFile(obj.object)) {
       if (!obj.name.endsWith(".md")) continue;
       if (ignoredFiles.includes(obj.path)) continue;
+
+      if (version !== "master") obj.path = `${version}/${obj.path}`;
 
       const id = obj.path
         .toLowerCase()
@@ -91,6 +112,7 @@ async function getFilesRecursive(
       });
 
       const parsedData = await context.parseData({ id, filePath, data });
+      parsedData.version = version;
 
       const dataEntry: DataEntry = {
         id,
@@ -122,61 +144,115 @@ async function getFilesRecursive(
         digest,
         deferredRender: true,
       });
-    } else await getFilesRecursive(obj.object, context);
+    } else await getFilesRecursive(obj.object, version, context);
   }
 }
 
-function ironbarDocsLoader(): Loader {
-  const VERSION = "docs/starlight";
+async function getGraphqlData<TReq, TRes>(
+  context: LoaderContext,
+  queryFile: string,
+  variables: TReq,
+): Promise<TRes> {
   const ENDPOINT = "https://api.github.com/graphql";
 
   if (!import.meta.env.GITHUB_TOKEN) {
     throw new Error("Missing GITHUB_TOKEN");
   }
 
-  const query = readFileSync("src/assets/query.graphql", "utf-8");
+  const query = readFileSync(`src/assets/${queryFile}.graphql`, "utf-8");
+
+  const data: GraphQlResponse<TRes> = await fetch(ENDPOINT, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${import.meta.env.GITHUB_TOKEN}`,
+    },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  }).then((r) => r.json());
+
+  if (data.errors) {
+    for (const error of data.errors) context.logger.error(error.message);
+  }
+
+  return data.data;
+}
+
+async function getVersions(context: LoaderContext): Promise<string[]> {
+  const versions = await getGraphqlData<
+    TagsRequest,
+    { repository: { refs: GithubRefs } }
+  >(context, "tags", {
+    owner: "JakeStanger",
+    name: "ironbar",
+    top: 5,
+  }).then((r) => r.repository.refs.nodes.map((n) => n.name));
+
+  return ["master", ...versions];
+}
+
+function ironbarDocsLoader(): Loader {
+  if (!import.meta.env.GITHUB_TOKEN) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
 
   return {
     name: "ironbar-docs-loader",
     load: async (context) => {
-      const data: GraphQlResponse = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${import.meta.env.GITHUB_TOKEN}`,
-        },
-        body: JSON.stringify({
-          query,
-          variables: {
-            owner: "JakeStanger",
-            name: "ironbar",
-            object: `${VERSION}:docs`,
-          },
-        }),
-      }).then((r) => r.json());
+      const versions = await getVersions(context);
 
-      if (data.errors) {
-        for (const error of data.errors) context.logger.error(error.message);
+      for (const version of versions) {
+        const data = await getGraphqlData<
+          FilesRequest,
+          { repository: { object: GitHubDirectory } }
+        >(context, "files", {
+          owner: "JakeStanger",
+          name: "ironbar",
+          object: `${version}:docs`,
+        });
+
+        await getFilesRecursive(data.repository.object, version, context);
       }
-
-      await getFilesRecursive(data.data.repository.object, context);
     },
   };
 }
 
-async function schemaLoader() {
-  const VERSION = "master";
+function schemaLoader(): Loader {
+  return {
+    name: "ironbar-schema-loader",
+    load: async (context) => {
+      const versions = await getVersions(context);
 
-  const file = VERSION === "master" ? "schema.json" : `schema-${VERSION}.json`;
-  const url = `https://f.jstanger.dev/github/ironbar/${file}`;
+      const schemas = await Promise.all(
+        versions.map((tag) => {
+          const file = tag === "master" ? "schema.json" : `schema-${tag}.json`;
+          const url = `https://f.jstanger.dev/github/ironbar/${file}?raw`;
 
-  const schema = await fetch(url).then((r) => r.json());
+          return fetch(url, {
+            headers: { accept: "application/json" },
+          }).then<Schema>((r) => r.json());
+        }),
+      );
 
-  return { schema };
+      for (let i = 0; i < versions.length; i++) {
+        const schema = schemas[i];
+        const version = versions[i];
+
+        context.store.set({
+          id: version,
+          data: {
+            schema,
+          },
+        });
+      }
+    },
+  };
 }
 
 export const collections = {
   docs: defineCollection({ loader: ironbarDocsLoader(), schema: docsSchema() }),
-  schema: defineCollection({ loader: schemaLoader }),
+  schema: defineCollection({ loader: schemaLoader() }),
   // versions: defineCollection({ loader: docsVersionsLoader() }),
   changelogs: defineCollection({
     loader: changelogsLoader([

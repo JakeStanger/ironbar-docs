@@ -1,5 +1,5 @@
 import { defineRouteMiddleware } from "@astrojs/starlight/route-data";
-import { aliases, type Definition, type Type } from "./schema.ts";
+import { aliases, type Definition, type Schema, type Type } from "./schema.ts";
 import type { APIContext } from "astro";
 import { capitalise, getModuleProperties } from "./utils.ts";
 import { getCollection, getEntry } from "astro:content";
@@ -14,18 +14,22 @@ import type {
 type Tree = { [key: string | symbol]: Tree };
 const titleKey = Symbol("title");
 
-async function addTocItems(context: APIContext, pageId: string) {
+async function addTocItems(context: APIContext, version: string, pageId: string) {
   const items = context.locals.starlightRoute.toc?.items;
   if (!items) return;
 
   const parts = pageId.split("/");
+
   let typeName = (capitalise(parts[parts.length - 1]) + "Module") as Type;
 
   if (typeName in aliases) {
     typeName = aliases[typeName as keyof typeof aliases] as Type;
   }
 
-  const schema = await getEntry("schema", "schema")?.then((res) => res.data);
+  const schema: Schema = await getEntry(
+    "schema",
+    version,
+  )?.then((res) => res.data.schema);
 
   const structDef = (schema.$defs[typeName] ?? {
     properties: [],
@@ -46,10 +50,10 @@ async function addTocItems(context: APIContext, pageId: string) {
   );
 }
 
-async function addSidebar(context: APIContext) {
+async function addSidebar(context: APIContext, version: string) {
   let docs;
   try {
-    docs = await getCollection("docs");
+    docs = await getCollection("docs", (doc => doc.data.version === version));
   } catch {
     console.error("docs catalog not initialized");
     return;
@@ -132,15 +136,24 @@ function addSidebarItem(
 export const onRequest = defineRouteMiddleware(async (context) => {
   const route = context.locals.starlightRoute;
   const pageId = route.id;
+
+  const parts = context.url.pathname.split("/").filter((p) => p);
+
+  const maybeVersion = parts[0];
+  const isPrevVersion = /^v\d/.test(maybeVersion);
+  const version = isPrevVersion ? maybeVersion : "master";
+
   if (pageId.startsWith("modules/")) {
-    await addTocItems(context, pageId);
+    await addTocItems(context, version, pageId);
   }
 
-  await addSidebar(context);
+  await addSidebar(context, version);
 
   if (route.editUrl) {
     route.editUrl.pathname = route.editUrl.pathname
       .replace(".astro/collections/", "")
       .slice(0, -1);
   }
+
+  context.locals.version = version;
 });

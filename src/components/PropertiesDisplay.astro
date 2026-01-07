@@ -14,7 +14,9 @@ interface Props {
 }
 
 const { depth, typeName, overrides, includeCommon } = Astro.props as Props;
-const schema: Schema = await getEntry('schema', 'schema')?.then(res => res.data);
+const { version } = Astro.locals as { version: string };
+
+const schema: Schema = await getEntry('schema', version)?.then(res => res.data.schema);
 
 let structDef = (schema.$defs[typeName] ?? {properties: []}) as Definition;
 

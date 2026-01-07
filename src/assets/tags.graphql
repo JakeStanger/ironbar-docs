@@ -1,0 +1,9 @@
+query RepoFiles($owner: String!, $name: String!, $top: Int!) {
+  repository(owner: $owner, name: $name) {
+    refs(refPrefix: "refs/tags/", last: $top) {
+      nodes {
+        name
+      }
+    }
+  }
+}

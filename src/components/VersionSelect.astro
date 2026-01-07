@@ -1,0 +1,45 @@
+---
+const { version } = Astro.locals;
+---
+
+<div>
+    <label>
+        <select id="version-select">
+            <option>master</option>
+            <option>v0.18.0</option>
+            <option>v0.17.1</option>
+            <option>v0.17.0</option>
+            <option>v0.16.1</option>
+            <option>v0.16.0</option>
+        </select>
+    </label>
+</div>
+
+<script is:inline define:vars={{currentVersion: version}}>
+  function setupVersionSelect() {
+    const versionSelect = document.querySelector('#version-select');
+
+    if(!versionSelect) {
+      console.error('failed to locate version select dropdown');
+      return;
+    }
+
+    versionSelect.value = currentVersion;
+
+    versionSelect.addEventListener('change', (event) => {
+      const versionSlug = event.target.value;
+      const currentPath = window.location.pathname;
+      const parts = currentPath.split('/').filter(p => p);
+
+      const isPrevVersion = currentVersion !== "master";
+
+      if((!versionSlug || versionSlug === "master") && isPrevVersion) {
+          window.location.pathname = parts.slice(1).join('/');
+      } else {
+        window.location.pathname = [versionSlug, ...parts.slice(isPrevVersion ? 1 : 0)].join('/');
+      }
+    });
+  }
+
+  setupVersionSelect();
+</script>

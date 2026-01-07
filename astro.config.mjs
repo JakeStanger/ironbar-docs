@@ -54,6 +54,9 @@ export default defineConfig({
       editLink: {
         baseUrl: "https://github.com/jakestanger/ironbar/edit/master",
       },
+      components: {
+        ThemeSelect: "./src/overrides/ThemeSelect.astro",
+      },
       sidebar: [
         {
           label: "Version history",
