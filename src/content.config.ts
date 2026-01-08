@@ -234,6 +234,8 @@ function schemaLoader(): Loader {
     load: async (context) => {
       const versions = await getVersions(context);
 
+      context.logger.info(`Got versions: [${versions.join(", ")}]`);
+
       const schemas = await Promise.all(
         versions.map((tag) => {
           const file = tag === "master" ? "schema.json" : `schema-${tag}.json`;
@@ -241,13 +243,18 @@ function schemaLoader(): Loader {
 
           return fetch(url, {
             headers: { accept: "application/json" },
-          }).then<Schema>((r) => r.json());
+          }).then<Schema>((r) => r.json()).catch(err => {
+            context.logger.error(`Failed to load schema for ${tag}: ${err}`);
+            throw err;
+          });
         }),
       );
 
       for (let i = 0; i < versions.length; i++) {
         const schema = schemas[i];
         const version = versions[i];
+
+        context.logger.info(`Loaded schema for ${version}`);
 
         context.store.set({
           id: version,
