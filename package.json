@@ -24,6 +24,7 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "wrangler": "^4.58.0"
   }
 }
