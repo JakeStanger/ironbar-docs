@@ -239,7 +239,7 @@ function schemaLoader(): Loader {
       const schemas = await Promise.all(
         versions.map((tag) => {
           const file = tag === "master" ? "schema.json" : `schema-${tag}.json`;
-          const url = `https://f.jstanger.dev/github/ironbar/${file}?raw`;
+          const url = `https://f.ironb.ar/${file}`;
 
           return fetch(url, {
             headers: { accept: "application/json" },
